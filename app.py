@@ -9,6 +9,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 import json
 from scipy import stats
+import requests
+from io import StringIO
 
 # Mapeamento de classes para descrições
 CLASS_MAPPING = {
@@ -93,38 +95,52 @@ st.set_page_config(
 @st.cache_resource
 def load_or_create_model():
     try:
-        # Tentar carregar o modelo existente
-        model = joblib.load('Random_Forest_model.joblib')
+        # URL do modelo no GitHub
+        model_url = "https://raw.githubusercontent.com/sidnei-almeida/tcc_streamlit/refs/heads/main/Random_Forest_model.joblib"
+        
+        # Fazer requisição GET para o arquivo
+        response = requests.get(model_url)
+        response.raise_for_status()  # Levanta exceção para erros HTTP
+        
+        # Salvar o modelo temporariamente e carregar
+        with open('temp_model.joblib', 'wb') as f:
+            f.write(response.content)
+        
+        model = joblib.load('temp_model.joblib')
         
         # Verificar se o modelo está prevendo corretamente
-        # Usar alguns dados de treino para teste
         data = load_data()
-        X = data.drop(['name', 'country', 'pc_class'], axis=1)
-        y = data['pc_class']
-        
-        # Fazer algumas previsões de teste
-        test_preds = model.predict(X[:10])
-        
-        # Se todas as previsões forem a mesma classe, há algo errado
-        if len(set(test_preds)) == 1:
-            st.warning("Modelo carregado pode estar com problemas. Treinando novo modelo...")
-            raise Exception("Modelo com previsões uniformes")
+        if data is not None:
+            X = data.drop(['name', 'country', 'pc_class'], axis=1)
+            y = data['pc_class']
             
+            # Fazer algumas previsões de teste
+            test_preds = model.predict(X[:10])
+            
+            # Se todas as previsões forem a mesma classe, há algo errado
+            if len(set(test_preds)) == 1:
+                st.warning("Modelo carregado pode estar com problemas. Treinando novo modelo...")
+                raise Exception("Modelo com previsões uniformes")
+        
         return model
         
     except Exception as e:
         st.info("Treinando novo modelo Random Forest...")
         # Se não conseguir carregar, criar e treinar um novo modelo
         data = load_data()
+        if data is None:
+            st.error("Não foi possível carregar os dados para treinar o modelo.")
+            return None
+            
         X = data.drop(['name', 'country', 'pc_class'], axis=1)
         y = data['pc_class']
         
         # Criar e treinar o modelo
         model = RandomForestClassifier(
             n_estimators=100,
-            max_depth=10,  # Limitar profundidade para evitar overfitting
+            max_depth=10,
             random_state=42,
-            class_weight='balanced'  # Usar pesos balanceados
+            class_weight='balanced'
         )
         
         # Treinar o modelo
@@ -135,16 +151,54 @@ def load_or_create_model():
         class_dist = pd.Series(train_preds).value_counts()
         st.write("Distribuição das classes nas previsões de treino:", class_dist)
         
-        # Salvar o modelo
-        joblib.dump(model, 'Random_Forest_model.joblib')
+        # Salvar o modelo localmente
+        joblib.dump(model, 'temp_model.joblib')
         
         return model
 
 # Função para carregar os dados
 @st.cache_data
 def load_data():
-    data = pd.read_csv('data.csv')
-    return data
+    try:
+        # URL do dataset no GitHub
+        url = "https://raw.githubusercontent.com/sidnei-almeida/tcc_streamlit/refs/heads/main/data.csv"
+        
+        # Fazer requisição GET para o arquivo
+        response = requests.get(url)
+        response.raise_for_status()  # Levanta exceção para erros HTTP
+        
+        # Ler o CSV da resposta
+        data = pd.read_csv(StringIO(response.text))
+        
+        if data.empty:
+            st.error("O arquivo de dados está vazio.")
+            return None
+        
+        # Verificar colunas necessárias
+        required_columns = [
+            'name', 'country', 'pc_class',
+            'dividend_yield_ttm', 'earnings_ttm', 'marketcap',
+            'pe_ratio_ttm', 'revenue_ttm', 'price',
+            'gdp_per_capita_usd', 'gdp_growth_percent', 'inflation_percent',
+            'interest_rate_percent', 'unemployment_rate_percent', 'exchange_rate_to_usd'
+        ]
+        
+        missing_columns = set(required_columns) - set(data.columns)
+        if missing_columns:
+            st.error(f"Colunas ausentes no arquivo de dados: {', '.join(missing_columns)}")
+            return None
+            
+        return data
+        
+    except requests.RequestException as e:
+        st.error(f"Erro ao carregar os dados do GitHub: {str(e)}")
+        return None
+    except pd.errors.EmptyDataError:
+        st.error("O arquivo de dados está vazio.")
+        return None
+    except Exception as e:
+        st.error(f"Erro ao processar os dados: {str(e)}")
+        return None
 
 # Função para remover outliers usando IQR
 def remove_outliers_iqr(df):
