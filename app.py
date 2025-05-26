@@ -88,8 +88,28 @@ st.set_page_config(
     page_title="Stock Market Analysis & Prediction",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': None
+    }
 )
+
+# Forçar tema light
+st.markdown("""
+    <style>
+        [data-testid="stSidebar"] {
+            background-color: #f8f9fa;
+        }
+        .stApp {
+            background-color: #ffffff;
+        }
+        .main {
+            background-color: #f8f9fa;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # Função para carregar ou treinar o modelo
 @st.cache_resource
