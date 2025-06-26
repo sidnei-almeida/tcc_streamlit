@@ -552,11 +552,12 @@ if data is not None:
     
     # Criar abas
     tab1, tab2, tab3 = st.tabs([
-        "📊 Visualização de Dados",
-        "🎯 Previsão Individual",
-        "📑 Previsão em Lote"
+        "Visualização de Dados",
+        "Previsão Individual",
+        "Previsão em Lote"
     ])
 
+    # Conteúdo da aba de Visualização de Dados
     with tab1:
         st.header("Visualização e Análise de Indicadores de Crescimento")
         
@@ -627,7 +628,7 @@ if data is not None:
                 'pc_class_desc': 'Potencial de Crescimento'
             }
         )
-
+        
         # Atualizar o layout do gráfico
         fig.update_layout(
             template=None,
@@ -636,86 +637,74 @@ if data is not None:
             title=dict(
                 font=dict(size=16, color=THEME_COLORS['text']),
                 x=0.5,
-                xanchor='center'
+                y=0.95
             ),
             legend=dict(
-                title=dict(text='Potencial de Crescimento', font=dict(color=THEME_COLORS['text'], size=12)),
-                font=dict(color=THEME_COLORS['text'], size=10),
-                bgcolor='rgba(255,255,255,0.8)',
-                bordercolor=THEME_COLORS['text'],
-                borderwidth=1
+                title=None,
+                orientation="h",
+                y=-0.15,
+                yanchor="top",
+                x=0.5,
+                xanchor="center"
             ),
-            xaxis=dict(
-                title_font=dict(size=12, color=THEME_COLORS['text']),
-                tickfont=dict(size=10, color=THEME_COLORS['text']),
-                gridcolor=THEME_COLORS['grid'],
-                showgrid=True
-            ),
-            yaxis=dict(
-                title_font=dict(size=12, color=THEME_COLORS['text']),
-                tickfont=dict(size=10, color=THEME_COLORS['text']),
-                gridcolor=THEME_COLORS['grid'],
-                showgrid=True
-            ),
-            margin=dict(t=50, b=20, l=20, r=20),  # Aumentar margem superior
-            height=500  # Definir altura fixa um pouco maior para o gráfico de dispersão
+            margin=dict(t=50, b=100),
+            height=600
         )
-
+        
         # Exibir o gráfico
         st.plotly_chart(fig, use_container_width=True)
-
-        # Adicionar explicação sobre o gráfico
+        
+        # Adicionar explicação sobre a escala logarítmica
         st.markdown("""
-        **Sobre o gráfico:**
-        - Cada ponto representa uma empresa
-        - O tamanho do ponto é proporcional à receita da empresa
-        - As cores indicam o potencial de crescimento previsto
+        **Nota sobre a visualização:**
+        - O tamanho dos pontos é proporcional à receita da empresa
         - Os valores estão em escala logarítmica para melhor visualização
         """)
-
+        
+    # Conteúdo da aba de Previsão Individual
     with tab2:
         st.header("Previsão Individual")
         st.markdown("""
-            <p style='color: #2d3748; font-size: 0.95rem; margin-bottom: 1.5rem;'>
-                Insira os dados de uma empresa para obter uma previsão de seu potencial de crescimento.
-            </p>
-        """, unsafe_allow_html=True)
-
-        # Formulário de entrada de dados
+            Insira os dados da empresa para obter uma previsão do seu potencial de crescimento.
+            Todos os campos são obrigatórios.
+        """)
+        
+        # Criar formulário para entrada de dados
         with st.form("prediction_form"):
             col1, col2 = st.columns(2)
             
             with col1:
                 name = st.text_input("Nome da Empresa")
                 country = st.text_input("País")
+                dividend_yield_ttm = st.number_input("Dividend Yield (TTM)", min_value=0.0, format="%.6f")
+                earnings_ttm = st.number_input("Lucros (TTM)", format="%.2f")
                 marketcap = st.number_input("Valor de Mercado", min_value=0.0, format="%.2f")
-                pe_ratio_ttm = st.number_input("Índice P/L", min_value=0.0, format="%.2f")
-                revenue_ttm = st.number_input("Receita", min_value=0.0, format="%.2f")
-                price = st.number_input("Preço", min_value=0.0, format="%.2f")
+                pe_ratio_ttm = st.number_input("Índice P/L (TTM)", format="%.2f")
+                revenue_ttm = st.number_input("Receita (TTM)", format="%.2f")
             
             with col2:
-                earnings_ttm = st.number_input("Lucros", min_value=0.0, format="%.2f")
-                dividend_yield_ttm = st.number_input("Rendimento de Dividendos", min_value=0.0, format="%.2f")
-                gdp_per_capita_usd = st.number_input("PIB per Capita", min_value=0.0, format="%.2f")
-                gdp_growth_percent = st.number_input("Taxa de Crescimento do PIB", min_value=0.0, format="%.2f")
+                price = st.number_input("Preço", min_value=0.0, format="%.2f")
+                gdp_per_capita_usd = st.number_input("PIB per Capita (USD)", min_value=0.0, format="%.2f")
+                gdp_growth_percent = st.number_input("Crescimento do PIB (%)", format="%.2f")
                 inflation_percent = st.number_input("Taxa de Inflação", min_value=0.0, format="%.2f")
                 interest_rate_percent = st.number_input("Taxa de Juros", min_value=0.0, format="%.2f")
                 unemployment_rate_percent = st.number_input("Taxa de Desemprego", min_value=0.0, format="%.2f")
-                exchange_rate_to_usd = st.number_input("Câmbio para USD", min_value=0.0, format="%.2f")
+                exchange_rate_to_usd = st.number_input("Taxa de Câmbio (USD)", min_value=0.0, format="%.2f")
             
-            submit_button = st.form_submit_button("Obter Previsão")
-
-        if submit_button:
-            # Preparar dados de entrada
+            # Botão de submit
+            submitted = st.form_submit_button("Fazer Previsão")
+        
+        if submitted:
+            # Criar DataFrame com os dados de entrada
             input_data = pd.DataFrame({
                 'name': [name],
                 'country': [country],
+                'dividend_yield_ttm': [dividend_yield_ttm],
+                'earnings_ttm': [earnings_ttm],
                 'marketcap': [marketcap],
                 'pe_ratio_ttm': [pe_ratio_ttm],
                 'revenue_ttm': [revenue_ttm],
                 'price': [price],
-                'earnings_ttm': [earnings_ttm],
-                'dividend_yield_ttm': [dividend_yield_ttm],
                 'gdp_per_capita_usd': [gdp_per_capita_usd],
                 'gdp_growth_percent': [gdp_growth_percent],
                 'inflation_percent': [inflation_percent],
@@ -725,67 +714,116 @@ if data is not None:
             })
             
             # Fazer previsão
-            prediction = batch_predict(input_data)
+            with st.spinner("Processando..."):
+                predictions = batch_predict(input_data)
             
-            if prediction is not None:
-                # Exibir resultado
+            if predictions is not None:
+                # Exibir resultados
                 st.subheader("Resultado da Previsão")
-                st.write(f"Potencial de Crescimento: {prediction['pc_class_desc'].iloc[0]}")
                 
-                # Exibir probabilidades
-                st.subheader("Probabilidades")
-                prob_data = prediction[['prob_Baixo Potencial de Crescimento', 'prob_Médio Potencial de Crescimento', 'prob_Alto Potencial de Crescimento']].iloc[0]
-                prob_fig = px.bar(
-                    prob_data,
-                    x=prob_data.index,
-                    y=prob_data.values,
-                    color=prob_data.index,
-                    color_discrete_sequence=THEME_COLORS['marker_colors'],
-                    labels={
-                        'x': 'Potencial de Crescimento',
-                        'y': 'Probabilidade'
-                    }
-                )
+                # Criar colunas para métricas
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric(
+                        "Classificação",
+                        predictions['pc_class_desc'].iloc[0]
+                    )
+                
+                with col2:
+                    highest_prob = max([
+                        predictions['prob_Baixo Potencial de Crescimento'].iloc[0],
+                        predictions['prob_Médio Potencial de Crescimento'].iloc[0],
+                        predictions['prob_Alto Potencial de Crescimento'].iloc[0]
+                    ])
+                    st.metric(
+                        "Confiança",
+                        f"{highest_prob*100:.1f}%"
+                    )
+                
+                with col3:
+                    st.metric(
+                        "Classe",
+                        f"Classe {predictions['pc_class'].iloc[0]}"
+                    )
+                
+                # Criar gráfico de probabilidades
+                prob_data = {
+                    'Classe': ['Baixo', 'Médio', 'Alto'],
+                    'Probabilidade': [
+                        predictions['prob_Baixo Potencial de Crescimento'].iloc[0],
+                        predictions['prob_Médio Potencial de Crescimento'].iloc[0],
+                        predictions['prob_Alto Potencial de Crescimento'].iloc[0]
+                    ]
+                }
+                
+                prob_fig = go.Figure(data=[
+                    go.Bar(
+                        x=prob_data['Classe'],
+                        y=prob_data['Probabilidade'],
+                        text=[f"{p*100:.1f}%" for p in prob_data['Probabilidade']],
+                        textposition='auto',
+                        marker_color=THEME_COLORS['marker_colors']
+                    )
+                ])
                 
                 prob_fig.update_layout(
-                    showlegend=False,
-                    title_x=0.5,
-                    title_font=dict(size=14, color=THEME_COLORS['text']),
-                    xaxis_title="",
+                    title="Probabilidades por Classe",
+                    xaxis_title="Potencial de Crescimento",
                     yaxis_title="Probabilidade",
-                    plot_bgcolor=THEME_COLORS['background'],
-                    paper_bgcolor=THEME_COLORS['background'],
-                    margin=dict(t=50, b=20, l=20, r=20),  # Aumentar margem superior
-                    height=400  # Definir altura fixa
+                    yaxis=dict(
+                        tickformat=".0%",
+                        range=[0, 1]
+                    ),
+                    showlegend=False,
+                    height=400
                 )
                 
                 st.plotly_chart(prob_fig, use_container_width=True)
-
+                
+    # Conteúdo da aba de Previsão em Lote
     with tab3:
         st.header("Previsão em Lote")
         st.markdown("""
-            <p style='color: #2d3748; font-size: 0.95rem; margin-bottom: 1.5rem;'>
-                Faça upload de um arquivo CSV contendo múltiplas empresas para análise em lote.
-                O arquivo deve conter as mesmas colunas do dataset de exemplo.
-            </p>
-        """, unsafe_allow_html=True)
-
-        # Botão para baixar exemplo na aba de previsão em lote
-        if sample_data is not None:
-            csv = sample_data.to_csv(index=False)
-            st.download_button(
-                label="📥 Baixar Template",
-                data=csv,
-                file_name="template_dados.csv",
-                mime="text/csv",
-                help="Template CSV com as colunas necessárias",
-                type="secondary",
-                key="download_example_batch"
-            )
+            Faça upload de um arquivo CSV contendo múltiplas empresas para análise.
+            O arquivo deve conter as seguintes colunas:
+            - name (nome da empresa)
+            - country (país)
+            - dividend_yield_ttm (dividend yield)
+            - earnings_ttm (lucros)
+            - marketcap (valor de mercado)
+            - pe_ratio_ttm (índice P/L)
+            - revenue_ttm (receita)
+            - price (preço)
+            - gdp_per_capita_usd (PIB per capita)
+            - gdp_growth_percent (crescimento do PIB)
+            - inflation_percent (inflação)
+            - interest_rate_percent (taxa de juros)
+            - unemployment_rate_percent (taxa de desemprego)
+            - exchange_rate_to_usd (taxa de câmbio)
+        """)
+        
+        # Criar duas colunas
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Botão para baixar template
+            sample_data = create_sample_dataset()
+            if sample_data is not None:
+                csv = sample_data.to_csv(index=False)
+                st.download_button(
+                    label="📥 Baixar Template com Exemplos",
+                    data=csv,
+                    file_name="template_empresas.csv",
+                    mime="text/csv",
+                    help="Baixar arquivo CSV de exemplo com 500 empresas",
+                    type="secondary",
+                    key="download_template"
+                )
 
         # Upload do arquivo
-        uploaded_file = st.file_uploader("Escolha um arquivo CSV", type="csv")
-
+        uploaded_file = st.file_uploader("Escolha um arquivo CSV", type="csv", key="batch_file_uploader")
+        
         if uploaded_file is not None:
             try:
                 # Carregar dados do arquivo
@@ -804,160 +842,170 @@ if data is not None:
                 if missing_columns:
                     st.error(f"Colunas ausentes no arquivo: {', '.join(missing_columns)}")
                 else:
-                    # Fazer previsões
-                    with st.spinner("Processando dados..."):
-                        predictions = batch_predict(input_data)
+                    # Mostrar preview dos dados
+                    st.write("Preview dos dados carregados:")
+                    st.dataframe(
+                        input_data.head(),
+                        use_container_width=True,
+                        hide_index=True
+                    )
                     
-                    if predictions is not None:
-                        # Exibir resultados
-                        st.subheader("Resultados da Previsão")
+                    # Botão para fazer a previsão
+                    if st.button("Realizar Previsão", type="primary", key="batch_predict_button"):
+                        # Fazer previsões
+                        with st.spinner("Processando dados..."):
+                            predictions = batch_predict(input_data)
                         
-                        # Criar um DataFrame simplificado para exibição
-                        display_df = predictions[[
-                            'name', 'country', 'pc_class_desc',
-                            'prob_Baixo Potencial de Crescimento',
-                            'prob_Médio Potencial de Crescimento',
-                            'prob_Alto Potencial de Crescimento'
-                        ]].copy()
-                        
-                        # Renomear colunas para melhor visualização
-                        display_df.columns = [
-                            'Empresa', 'País', 'Potencial de Crescimento',
-                            'Prob. Baixo', 'Prob. Médio', 'Prob. Alto'
-                        ]
-                        
-                        # Formatar colunas de probabilidade como percentual
-                        for col in ['Prob. Baixo', 'Prob. Médio', 'Prob. Alto']:
-                            display_df[col] = display_df[col].map('{:.1%}'.format)
-                        
-                        # Exibir tabela com resultados
-                        st.dataframe(
-                            display_df,
-                            use_container_width=True,
-                            hide_index=True
-                        )
-                        
-                        # Análise Estatística dos Resultados
-                        st.subheader("Análise Estatística dos Resultados")
-                        
-                        # Distribuição das classes
-                        st.write("##### Distribuição das Classificações")
-                        class_dist = predictions['pc_class_desc'].value_counts()
-                        class_dist_df = pd.DataFrame({
-                            'Classificação': class_dist.index,
-                            'Quantidade': class_dist.values,
-                            'Percentual': (class_dist.values / len(predictions) * 100).round(1)
-                        })
-                        
-                        # Criar gráfico de pizza para distribuição das classes
-                        fig_pie = go.Figure(data=[go.Pie(
-                            labels=class_dist_df['Classificação'],
-                            values=class_dist_df['Quantidade'],
-                            hole=0.4,
-                            textinfo='label+percent',
-                            textposition='outside',
-                            pull=[0.1 if x == class_dist_df['Quantidade'].max() else 0 for x in class_dist_df['Quantidade']]
-                        )])
-                        fig_pie.update_layout(
-                            title="Distribuição das Classificações",
-                            height=400,
-                            margin=dict(t=50, b=0, l=0, r=0),
-                            showlegend=False
-                        )
-                        st.plotly_chart(fig_pie, use_container_width=True)
-                        
-                        # Análise por País
-                        if len(predictions['country'].unique()) > 1:
-                            st.write("##### Análise por País")
-                            country_analysis = pd.crosstab(
-                                predictions['country'],
-                                predictions['pc_class_desc'],
-                                normalize='index'
-                            ) * 100
+                        if predictions is not None:
+                            # Exibir resultados
+                            st.subheader("Resultados da Previsão")
                             
-                            # Gráfico de barras empilhadas por país
-                            fig_country = go.Figure()
-                            for col in country_analysis.columns:
-                                fig_country.add_trace(go.Bar(
-                                    name=col,
-                                    x=country_analysis.index,
-                                    y=country_analysis[col],
-                                    text=country_analysis[col].round(1).astype(str) + '%',
-                                    textposition='auto',
-                                ))
+                            # Criar um DataFrame simplificado para exibição
+                            display_df = predictions[[
+                                'name', 'country', 'pc_class_desc',
+                                'prob_Baixo Potencial de Crescimento',
+                                'prob_Médio Potencial de Crescimento',
+                                'prob_Alto Potencial de Crescimento'
+                            ]].copy()
                             
-                            fig_country.update_layout(
-                                title="Distribuição das Classificações por País",
-                                yaxis_title="Percentual",
-                                barmode='stack',
+                            # Renomear colunas para melhor visualização
+                            display_df.columns = [
+                                'Empresa', 'País', 'Potencial de Crescimento',
+                                'Prob. Baixo', 'Prob. Médio', 'Prob. Alto'
+                            ]
+                            
+                            # Formatar colunas de probabilidade como percentual
+                            for col in ['Prob. Baixo', 'Prob. Médio', 'Prob. Alto']:
+                                display_df[col] = display_df[col].map('{:.1%}'.format)
+                            
+                            # Exibir tabela com resultados
+                            st.dataframe(
+                                display_df,
+                                use_container_width=True,
+                                hide_index=True
+                            )
+                            
+                            # Análise Estatística dos Resultados
+                            st.subheader("Análise Estatística dos Resultados")
+                            
+                            # Distribuição das classes
+                            st.write("##### Distribuição das Classificações")
+                            class_dist = predictions['pc_class_desc'].value_counts()
+                            class_dist_df = pd.DataFrame({
+                                'Classificação': class_dist.index,
+                                'Quantidade': class_dist.values,
+                                'Percentual': (class_dist.values / len(predictions) * 100).round(1)
+                            })
+                            
+                            # Criar gráfico de pizza para distribuição das classes
+                            fig_pie = go.Figure(data=[go.Pie(
+                                labels=class_dist_df['Classificação'],
+                                values=class_dist_df['Quantidade'],
+                                hole=0.4,
+                                textinfo='label+percent',
+                                textposition='outside',
+                                pull=[0.1 if x == class_dist_df['Quantidade'].max() else 0 for x in class_dist_df['Quantidade']]
+                            )])
+                            fig_pie.update_layout(
+                                title="Distribuição das Classificações",
                                 height=400,
+                                margin=dict(t=50, b=0, l=0, r=0),
+                                showlegend=False
+                            )
+                            st.plotly_chart(fig_pie, use_container_width=True)
+                            
+                            # Análise por País
+                            if len(predictions['country'].unique()) > 1:
+                                st.write("##### Análise por País")
+                                country_analysis = pd.crosstab(
+                                    predictions['country'],
+                                    predictions['pc_class_desc'],
+                                    normalize='index'
+                                ) * 100
+                                
+                                # Gráfico de barras empilhadas por país
+                                fig_country = go.Figure()
+                                for col in country_analysis.columns:
+                                    fig_country.add_trace(go.Bar(
+                                        name=col,
+                                        x=country_analysis.index,
+                                        y=country_analysis[col],
+                                        text=country_analysis[col].round(1).astype(str) + '%',
+                                        textposition='auto',
+                                    ))
+                                
+                                fig_country.update_layout(
+                                    title="Distribuição por País",
+                                    barmode='stack',
+                                    height=400,
+                                    yaxis_title="Percentual",
+                                    xaxis_title="País",
+                                    showlegend=True
+                                )
+                                st.plotly_chart(fig_country, use_container_width=True)
+                                
+                            # Estatísticas das probabilidades
+                            st.write("##### Estatísticas das Probabilidades")
+                            prob_cols = [
+                                'prob_Baixo Potencial de Crescimento',
+                                'prob_Médio Potencial de Crescimento',
+                                'prob_Alto Potencial de Crescimento'
+                            ]
+                            prob_stats = predictions[prob_cols].agg(['mean', 'std', 'min', 'max']).round(3)
+                            prob_stats.columns = ['Baixo Potencial', 'Médio Potencial', 'Alto Potencial']
+                            prob_stats.index = ['Média', 'Desvio Padrão', 'Mínimo', 'Máximo']
+                            
+                            # Formatar as estatísticas como percentual
+                            prob_stats_formatted = prob_stats.applymap(lambda x: f"{x*100:.1f}%")
+                            st.dataframe(
+                                prob_stats_formatted,
+                                use_container_width=True
+                            )
+                            
+                            # Correlações entre variáveis numéricas e probabilidades
+                            st.write("##### Correlações com Probabilidades")
+                            numeric_cols = [
+                                'dividend_yield_ttm', 'earnings_ttm', 'marketcap',
+                                'pe_ratio_ttm', 'revenue_ttm', 'price',
+                                'gdp_per_capita_usd', 'gdp_growth_percent', 'inflation_percent',
+                                'interest_rate_percent', 'unemployment_rate_percent', 'exchange_rate_to_usd'
+                            ]
+                            
+                            correlations = predictions[numeric_cols + prob_cols].corr().loc[numeric_cols, prob_cols]
+                            correlations.columns = ['Prob. Baixo', 'Prob. Médio', 'Prob. Alto']
+                            
+                            # Criar mapa de calor das correlações
+                            fig_corr = go.Figure(data=go.Heatmap(
+                                z=correlations.values,
+                                x=correlations.columns,
+                                y=correlations.index,
+                                text=correlations.values.round(2),
+                                texttemplate='%{text}',
+                                textfont={"size": 10},
+                                hoverongaps=False,
+                                colorscale='RdBu',
+                                zmin=-1,
+                                zmax=1
+                            ))
+                            
+                            fig_corr.update_layout(
+                                title="Correlações entre Variáveis e Probabilidades",
+                                height=600,
                                 margin=dict(t=50, b=0, l=0, r=0)
                             )
-                            st.plotly_chart(fig_country, use_container_width=True)
-                        
-                        # Estatísticas das probabilidades
-                        st.write("##### Estatísticas das Probabilidades")
-                        prob_cols = [
-                            'prob_Baixo Potencial de Crescimento',
-                            'prob_Médio Potencial de Crescimento',
-                            'prob_Alto Potencial de Crescimento'
-                        ]
-                        prob_stats = predictions[prob_cols].agg(['mean', 'std', 'min', 'max']).round(3)
-                        prob_stats.columns = ['Baixo Potencial', 'Médio Potencial', 'Alto Potencial']
-                        prob_stats.index = ['Média', 'Desvio Padrão', 'Mínimo', 'Máximo']
-                        
-                        # Formatar as estatísticas como percentual
-                        prob_stats_formatted = prob_stats.applymap(lambda x: f"{x*100:.1f}%")
-                        st.dataframe(
-                            prob_stats_formatted,
-                            use_container_width=True
-                        )
-                        
-                        # Correlações entre variáveis numéricas e probabilidades
-                        st.write("##### Correlações com Probabilidades")
-                        numeric_cols = [
-                            'dividend_yield_ttm', 'earnings_ttm', 'marketcap',
-                            'pe_ratio_ttm', 'revenue_ttm', 'price',
-                            'gdp_per_capita_usd', 'gdp_growth_percent', 'inflation_percent',
-                            'interest_rate_percent', 'unemployment_rate_percent', 'exchange_rate_to_usd'
-                        ]
-                        
-                        correlations = predictions[numeric_cols + prob_cols].corr().loc[numeric_cols, prob_cols]
-                        correlations.columns = ['Prob. Baixo', 'Prob. Médio', 'Prob. Alto']
-                        
-                        # Criar mapa de calor das correlações
-                        fig_corr = go.Figure(data=go.Heatmap(
-                            z=correlations.values,
-                            x=correlations.columns,
-                            y=correlations.index,
-                            text=correlations.values.round(2),
-                            texttemplate='%{text}',
-                            textfont={"size": 10},
-                            hoverongaps=False,
-                            colorscale='RdBu',
-                            zmin=-1,
-                            zmax=1
-                        ))
-                        
-                        fig_corr.update_layout(
-                            title="Correlações entre Variáveis e Probabilidades",
-                            height=600,
-                            margin=dict(t=50, b=0, l=0, r=0)
-                        )
-                        st.plotly_chart(fig_corr, use_container_width=True)
-                        
-                        # Adicionar botão para download dos resultados completos
-                        csv_results = predictions.to_csv(index=False)
-                        st.download_button(
-                            label="📥 Baixar Resultados Completos",
-                            data=csv_results,
-                            file_name="resultados_previsao.csv",
-                            mime="text/csv",
-                            help="Baixar resultados completos em formato CSV",
-                            type="secondary",
-                            key="download_results"
-                        )
-                        
+                            st.plotly_chart(fig_corr, use_container_width=True)
+                            
+                            # Adicionar botão para download dos resultados completos
+                            csv_results = predictions.to_csv(index=False)
+                            st.download_button(
+                                label="📥 Baixar Resultados Completos",
+                                data=csv_results,
+                                file_name="resultados_previsao.csv",
+                                mime="text/csv",
+                                help="Baixar resultados completos em formato CSV",
+                                type="secondary",
+                                key="download_results"
+                            )
             except Exception as e:
                 st.error(f"Erro ao processar o arquivo: {str(e)}")
 
