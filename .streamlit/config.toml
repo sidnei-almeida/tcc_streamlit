@@ -1,0 +1,12 @@
+[theme]
+# Tema principal
+base = "light"
+
+# Cores primárias
+primaryColor = "#0a4154"  # Cor principal que você especificou
+backgroundColor = "#ffffff"  # Fundo branco
+secondaryBackgroundColor = "#f0f2f6"  # Cor secundária para contraste
+textColor = "#0a4154"  # Cor do texto principal
+
+# Fontes
+font = "sans serif" 
