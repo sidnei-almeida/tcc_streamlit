@@ -137,11 +137,76 @@ def load_data():
         return None
 
 # Criar dataset de exemplo
+def generate_company_name():
+    # Indústrias/Setores
+    industries = [
+        "Tech", "Global", "Smart", "Digital", "Advanced", "Future", "Innovative", "Modern",
+        "Precision", "Dynamic", "Strategic", "Quantum", "Cyber", "Bio", "Green", "Eco",
+        "Solar", "Cloud", "Data", "AI", "Nano", "Meta", "Nexus", "Core", "Prime"
+    ]
+    
+    # Palavras de negócios
+    business_words = [
+        "Solutions", "Systems", "Technologies", "Industries", "Enterprises", "Networks",
+        "Dynamics", "Analytics", "Innovations", "Applications", "Platforms", "Services",
+        "Communications", "Engineering", "Software", "Hardware", "Robotics", "Energy",
+        "Materials", "Healthcare", "Ventures", "Capital", "Group", "Corporation"
+    ]
+    
+    # Sufixos comuns
+    suffixes = [
+        "Corp", "Inc", "Ltd", "Group", "Holdings", "International", "Global",
+        "Technologies", "Solutions", "Enterprises", "Systems", "Partners"
+    ]
+    
+    # Gerar nome
+    name_parts = []
+    
+    # 50% de chance de usar duas palavras da indústria
+    if np.random.random() < 0.5:
+        name_parts.extend(np.random.choice(industries, size=2, replace=False))
+    else:
+        name_parts.append(np.random.choice(industries))
+    
+    # Adicionar palavra de negócios
+    name_parts.append(np.random.choice(business_words))
+    
+    # 30% de chance de adicionar sufixo
+    if np.random.random() < 0.3:
+        name_parts.append(np.random.choice(suffixes))
+    
+    return " ".join(name_parts)
+
 def create_sample_dataset():
     original_data = load_data()
     if original_data is not None:
-        sample_data = original_data.sample(n=10, random_state=42)
-        sample_data = sample_data.drop('pc_class', axis=1)
+        # Criar um conjunto maior de dados sintéticos baseado nos dados originais
+        sample_data = pd.DataFrame()
+        
+        # Número de empresas desejado
+        n_samples = 500
+        
+        # Para cada coluna, gerar dados sintéticos baseados na distribuição dos dados originais
+        for col in original_data.columns:
+            if col == 'pc_class':
+                continue
+            elif col == 'name':
+                # Gerar nomes únicos de empresas
+                sample_data[col] = [generate_company_name() for _ in range(n_samples)]
+            elif col == 'country':
+                # Para país, apenas amostrar dos existentes
+                values = original_data[col].values
+                sample_data[col] = np.random.choice(values, size=n_samples)
+            else:
+                # Para variáveis numéricas, usar distribuição normal baseada nos dados originais
+                mean = original_data[col].mean()
+                std = original_data[col].std()
+                # Gerar valores positivos para métricas que não podem ser negativas
+                if col in ['marketcap', 'price', 'revenue_ttm', 'gdp_per_capita_usd']:
+                    sample_data[col] = np.abs(np.random.normal(mean, std, n_samples))
+                else:
+                    sample_data[col] = np.random.normal(mean, std, n_samples)
+        
         return sample_data
     return None
 
@@ -379,15 +444,40 @@ def batch_predict(df):
     try:
         # Preparar dados de entrada
         input_data = df.copy()
+        
+        # Verificar se as colunas necessárias existem
+        train_data = load_data()
+        train_features = train_data.drop(['name', 'country', 'pc_class'], axis=1).columns
+        
+        # Verificar colunas ausentes
+        missing_cols = set(train_features) - set(input_data.columns)
+        if missing_cols:
+            # Tentar mapear colunas antigas para novas
+            column_mapping = {
+                'inflation': 'inflation_percent',
+                'interest_rate': 'interest_rate_percent',
+                'unemployment': 'unemployment_rate_percent'
+            }
+            
+            # Renomear colunas se existirem
+            for old_col, new_col in column_mapping.items():
+                if old_col in input_data.columns and new_col in missing_cols:
+                    input_data[new_col] = input_data[old_col]
+                    input_data.drop(old_col, axis=1, inplace=True)
+            
+            # Verificar novamente colunas ausentes
+            missing_cols = set(train_features) - set(input_data.columns)
+            if missing_cols:
+                raise ValueError(f"Colunas ausentes: {', '.join(missing_cols)}")
+        
+        # Preparar features para previsão
         if 'name' in input_data.columns and 'country' in input_data.columns:
             features_df = input_data.drop(['name', 'country'], axis=1, errors='ignore')
         else:
             features_df = input_data
-        
-        # Verificar se as colunas estão na mesma ordem dos dados de treino
-        train_data = load_data()
-        train_features = train_data.drop(['name', 'country', 'pc_class'], axis=1).columns
-        features_df = features_df[train_features]  # Reordenar colunas para match com treino
+            
+        # Reordenar colunas para match com treino
+        features_df = features_df[train_features]
         
         # Fazer previsões diretamente com os dados fornecidos
         predictions = model.predict(features_df)
@@ -884,10 +974,10 @@ with footer_container:
                     Desenvolvido com ❤️ usando Streamlit e Plotly
                 </p>
                 <p style='color: #718096; font-size: 0.8rem;'>
-                    Dados atualizados diariamente | Modelo: Random Forest Classifier
+                    Modelo: Random Forest Classifier
                 </p>
                 <p style='color: #718096; font-size: 0.8rem;'>
-                    © 2024 Análise e Previsão do Mercado de Ações
+                    © 2024 Análise e Previsão de Crescimento Empresarial
                 </p>
             </div>
         """, unsafe_allow_html=True) 
